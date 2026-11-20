@@ -71,6 +71,10 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(first.returncode, 0, first.stderr)
         path = self.root / "dist/asksia-chatgpt-preview.zip"
         original_archive = path.read_bytes()
+        install_path = self.root / "dist/asksia-chatgpt-preview-install.zip"
+        original_install_archive = install_path.read_bytes()
+        claude_path = self.root / "dist/asksia-claude-preview.zip"
+        original_claude_archive = claude_path.read_bytes()
         with zipfile.ZipFile(path) as archive:
             self.assertEqual(archive.namelist(), list(package.ARCHIVE_FILES))
             self.assertEqual(json.loads(archive.read("mcp.json"))["mcpServers"]["asksia"]["url"],
@@ -80,7 +84,117 @@ class PackageTests(unittest.TestCase):
         second = self.build()
         self.assertEqual(second.returncode, 0, second.stderr)
         self.assertEqual(path.read_bytes(), original_archive)
+        self.assertEqual(install_path.read_bytes(), original_install_archive)
+        self.assertEqual(claude_path.read_bytes(), original_claude_archive)
         self.assertEqual(source, {name: (self.root / name).read_bytes() for name in source})
+
+    def assert_install_bundle(self, environment):
+        folder = f"asksia-chatgpt-{environment}-install"
+        archive_path = self.root / "dist" / f"{folder}.zip"
+        portable_path = self.root / "dist" / f"asksia-chatgpt-{environment}.zip"
+        catalog_relative = ".agents/plugins/marketplace.json"
+        expected_files = {
+            f"{folder}/{catalog_relative}",
+            f"{folder}/INSTALL.txt",
+            *(f"{folder}/plugins/asksia/{name}" for name in package.ARCHIVE_FILES),
+        }
+        with zipfile.ZipFile(archive_path) as archive, zipfile.ZipFile(portable_path) as portable:
+            names = archive.namelist()
+            self.assertEqual(len(names), len(set(names)))
+            # No source tree, local settings, or unrelated files belong here.
+            self.assertEqual(set(names), expected_files)
+            self.assertIsNone(archive.testzip())
+            instructions = archive.read(f"{folder}/INSTALL.txt").decode("utf-8")
+            self.assertIn(package.ENDPOINTS[environment], instructions)
+            self.assertIn("codex plugin marketplace add .", instructions)
+            for name in package.ARCHIVE_FILES:
+                self.assertEqual(archive.read(f"{folder}/plugins/asksia/{name}"),
+                                 portable.read(name))
+            destination = Path(self.temporary.name) / f"Mac Downloads {environment}"
+            archive.extractall(destination)
+
+        marketplace_root = destination / folder
+        catalog = json.loads((marketplace_root / catalog_relative).read_text())
+        self.assertEqual(catalog["name"], f"asksia-{environment}")
+        self.assertEqual(catalog["interface"]["displayName"],
+                         "AskSia Preview" if environment == "preview" else "AskSia")
+        self.assertEqual(len(catalog["plugins"]), 1)
+        plugin = catalog["plugins"][0]
+        self.assertEqual(plugin["name"], "asksia")
+        self.assertEqual(plugin["source"], {"source": "local", "path": "./plugins/asksia"})
+        self.assertEqual(plugin["policy"], {
+            "installation": "AVAILABLE", "authentication": "ON_INSTALL",
+        })
+        self.assertEqual(plugin["category"], "Education & Research")
+        plugin_root = (marketplace_root / plugin["source"]["path"]).resolve()
+        self.assertEqual(plugin_root, (marketplace_root / "plugins/asksia").resolve())
+        self.assertEqual(json.loads((plugin_root / "plugin.json").read_text())["name"], "asksia")
+        config = json.loads((plugin_root / "mcp.json").read_text())
+        self.assertEqual(config["mcpServers"]["asksia"]["url"], package.ENDPOINTS[environment])
+        self.assertEqual(sorted(p.parent.name for p in (plugin_root / "skills").glob("*/SKILL.md")),
+                         sorted(package.SKILLS))
+
+    def assert_claude_bundle(self, environment):
+        folder = f"asksia-claude-{environment}"
+        shared_files = tuple(name for name in package.ARCHIVE_FILES
+                             if name not in {"plugin.json", "mcp.json"})
+        expected_files = {
+            f"{folder}/.claude-plugin/plugin.json",
+            f"{folder}/.claude-plugin/marketplace.json",
+            f"{folder}/.mcp.json",
+            f"{folder}/INSTALL.txt",
+            *(f"{folder}/{name}" for name in shared_files),
+        }
+        archive_path = self.root / "dist" / f"{folder}.zip"
+        portable_path = self.root / "dist" / f"asksia-chatgpt-{environment}.zip"
+        with zipfile.ZipFile(archive_path) as archive, zipfile.ZipFile(portable_path) as portable:
+            names = archive.namelist()
+            self.assertEqual(len(names), len(set(names)))
+            self.assertEqual(set(names), expected_files)
+            self.assertIsNone(archive.testzip())
+            instructions = archive.read(f"{folder}/INSTALL.txt").decode("utf-8")
+            self.assertIn(package.ENDPOINTS[environment], instructions)
+            self.assertIn("plugin marketplace add", instructions)
+            self.assertIn(f"asksia@asksia-{environment}", instructions)
+            for name in shared_files:
+                self.assertEqual(archive.read(f"{folder}/{name}"), portable.read(name))
+            destination = Path(self.temporary.name) / f"Claude Downloads {environment}"
+            archive.extractall(destination)
+
+        marketplace_root = destination / folder
+        catalog = json.loads((marketplace_root / ".claude-plugin/marketplace.json").read_text())
+        self.assertEqual(catalog["name"], f"asksia-{environment}")
+        self.assertEqual(catalog["owner"]["name"], "AskSia")
+        self.assertEqual(len(catalog["plugins"]), 1)
+        plugin = catalog["plugins"][0]
+        self.assertEqual(plugin["name"], "asksia")
+        self.assertEqual(plugin["source"], "./")
+        plugin_root = (marketplace_root / plugin["source"]).resolve()
+        self.assertEqual(plugin_root, marketplace_root.resolve())
+        manifest = json.loads((plugin_root / ".claude-plugin/plugin.json").read_text())
+        self.assertEqual(manifest,
+                         json.loads((self.root / ".claude-plugin/plugin.json").read_text()))
+        self.assertTrue((plugin_root / manifest["icon"]).is_file())
+        config = json.loads((plugin_root / ".mcp.json").read_text())
+        self.assertEqual(config, {"mcpServers": {"asksia": {
+            "type": "http", "url": package.ENDPOINTS[environment],
+        }}})
+        self.assertEqual(sorted(p.parent.name for p in (plugin_root / "skills").glob("*/SKILL.md")),
+                         sorted(package.SKILLS))
+
+    def test_preview_install_bundle_resolves_after_unpacking_without_copying_local_settings(self):
+        self.write(".env", "TOKEN=test-only-placeholder\n")
+        self.write("private.csv", "unused private data\n")
+        self.write(".git/config", "test repository metadata\n")
+        self.write_json(".agents/plugins/marketplace.json", {"name": "unrelated-local-marketplace"})
+        self.write(".codex/config.toml", "model = 'test-only-placeholder'\n")
+        tracked_inputs = (*package.SOURCE_FILES, ".agents/plugins/marketplace.json", ".codex/config.toml")
+        original = {name: (self.root / name).read_bytes() for name in tracked_inputs}
+        result = self.build()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assert_install_bundle("preview")
+        self.assert_claude_bundle("preview")
+        self.assertEqual(original, {name: (self.root / name).read_bytes() for name in tracked_inputs})
 
     def test_production_requires_explicit_environment(self):
         result = self.build("--env", "production")
@@ -88,6 +202,10 @@ class PackageTests(unittest.TestCase):
         with zipfile.ZipFile(self.root / "dist/asksia-chatgpt-production.zip") as archive:
             self.assertEqual(json.loads(archive.read("mcp.json"))["mcpServers"]["asksia"]["url"],
                              package.ENDPOINTS["production"])
+        self.assert_install_bundle("production")
+        self.assert_claude_bundle("production")
+        self.assertFalse((self.root / "dist/asksia-chatgpt-preview-install.zip").exists())
+        self.assertFalse((self.root / "dist/asksia-claude-preview.zip").exists())
 
     def test_unknown_environment_or_extra_arguments_do_not_build(self):
         for arguments in (("--env", "staging"), ("--env",), ("--production",), ("--env", "preview", "extra")):
@@ -124,6 +242,36 @@ class PackageTests(unittest.TestCase):
         (self.root / "dist/asksia-chatgpt-preview.zip").symlink_to(untouched)
         self.assertNotEqual(self.build().returncode, 0)
         self.assertEqual(untouched.read_text(), "keep this")
+        self.assertFalse((self.root / "dist/asksia-chatgpt-preview-install.zip").exists())
+        self.assertFalse((self.root / "dist/asksia-claude-preview.zip").exists())
+
+    def test_symlinked_install_output_does_not_modify_the_existing_portable_archive(self):
+        untouched = Path(self.temporary.name) / "untouched-install-target"
+        untouched.write_text("keep this")
+        (self.root / "dist").mkdir()
+        portable = self.root / "dist/asksia-chatgpt-preview.zip"
+        portable.write_bytes(b"previous portable artifact")
+        (self.root / "dist/asksia-chatgpt-preview-install.zip").symlink_to(untouched)
+        self.assertNotEqual(self.build().returncode, 0)
+        self.assertEqual(untouched.read_text(), "keep this")
+        self.assertEqual(portable.read_bytes(), b"previous portable artifact")
+        self.assertFalse((self.root / "dist/asksia-claude-preview.zip").exists())
+
+    def test_symlinked_claude_output_does_not_modify_either_existing_chatgpt_archive(self):
+        untouched = Path(self.temporary.name) / "untouched-claude-target"
+        untouched.write_text("keep this")
+        (self.root / "dist").mkdir()
+        previous = {
+            "asksia-chatgpt-preview.zip": b"previous portable artifact",
+            "asksia-chatgpt-preview-install.zip": b"previous ChatGPT install artifact",
+        }
+        for filename, data in previous.items():
+            (self.root / "dist" / filename).write_bytes(data)
+        (self.root / "dist/asksia-claude-preview.zip").symlink_to(untouched)
+        self.assertNotEqual(self.build().returncode, 0)
+        self.assertEqual(untouched.read_text(), "keep this")
+        for filename, data in previous.items():
+            self.assertEqual((self.root / "dist" / filename).read_bytes(), data)
 
 
 if __name__ == "__main__":
