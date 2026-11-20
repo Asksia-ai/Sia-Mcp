@@ -1,0 +1,14 @@
+{
+  "name": "asksia",
+  "owner": {
+    "name": "AskSia"
+  },
+  "plugins": [
+    {
+      "name": "asksia",
+      "source": "./",
+      "description": "Practice exam questions and review vocabulary with your AskSia account."
+    }
+  ],
+  "description": "AskSia exam practice and vocabulary review."
+}

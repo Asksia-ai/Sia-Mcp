@@ -1,0 +1,36 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "asksia",
+  "version": "0.1.0",
+  "description": "Practice exam questions and review vocabulary with your AskSia account.",
+  "author": {
+    "name": "AskSia",
+    "email": "contact@asksia.ai",
+    "url": "https://www.asksia.ai"
+  },
+  "homepage": "https://www.asksia.ai",
+  "repository": "https://github.com/Asksia-ai/Sia-Mcp",
+  "license": "UNLICENSED",
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/getting-started/SKILL.md",
+      "interface": {
+        "displayName": "AskSia",
+        "shortDescription": "Exam practice and vocabulary",
+        "longDescription": "Use stored exam questions, check answers, and record vocabulary reviews with your connected AskSia account.",
+        "developerName": "AskSia",
+        "category": "Education & Research",
+        "capabilities": [
+          "Exam practice",
+          "Vocabulary review"
+        ],
+        "websiteURL": "https://www.asksia.ai",
+        "supportURL": "https://www.asksia.ai/contact-us",
+        "privacyPolicyURL": "https://www.asksia.ai/policies/privacy",
+        "termsOfServiceURL": "https://www.asksia.ai/policies/termofuse",
+        "composerIcon": "./assets/asksia.png",
+        "logo": "./assets/asksia.png"
+      }
+    }
+  }
+}

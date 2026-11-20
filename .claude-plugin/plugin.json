@@ -1,0 +1,19 @@
+{
+  "name": "asksia",
+  "version": "0.1.0",
+  "description": "Practice exam questions and review vocabulary with your AskSia account.",
+  "author": {
+    "name": "AskSia",
+    "email": "contact@asksia.ai",
+    "url": "https://www.asksia.ai"
+  },
+  "homepage": "https://www.asksia.ai",
+  "repository": "https://github.com/Asksia-ai/Sia-Mcp",
+  "license": "UNLICENSED",
+  "displayName": "AskSia",
+  "icon": "./assets/asksia.png",
+  "documentationUrl": "https://github.com/Asksia-ai/Sia-Mcp#readme",
+  "supportUrl": "https://www.asksia.ai/contact-us",
+  "privacyPolicyUrl": "https://www.asksia.ai/policies/privacy",
+  "termsOfServiceUrl": "https://www.asksia.ai/policies/termofuse"
+}
