@@ -1,8 +1,8 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "asksia",
-  "version": "0.1.0",
-  "description": "Practice exam questions and review vocabulary with your AskSia account.",
+  "version": "0.2.0",
+  "description": "Practice stored exam questions, review Chinese memory cards, and read your authorized AskSia course records.",
   "author": {
     "name": "AskSia",
     "email": "contact@asksia.ai",
@@ -16,13 +16,14 @@
       "onboardingSkill": "./skills/getting-started/SKILL.md",
       "interface": {
         "displayName": "AskSia",
-        "shortDescription": "Exam practice and vocabulary",
-        "longDescription": "Use stored exam questions, check answers, and record vocabulary reviews with your connected AskSia account.",
+        "shortDescription": "Exam practice, vocabulary and courses",
+        "longDescription": "Start curated exam practice, review stored Chinese vocabulary cards, and read your own saved lecture notes, transcripts, and course materials with account authorization.",
         "developerName": "AskSia",
         "category": "Education & Research",
         "capabilities": [
           "Exam practice",
-          "Vocabulary review"
+          "Vocabulary review",
+          "Read-only course records"
         ],
         "websiteURL": "https://www.asksia.ai",
         "supportURL": "https://www.asksia.ai/contact-us",

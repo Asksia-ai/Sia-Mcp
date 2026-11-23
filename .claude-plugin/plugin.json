@@ -1,7 +1,7 @@
 {
   "name": "asksia",
-  "version": "0.1.0",
-  "description": "Practice exam questions and review vocabulary with your AskSia account.",
+  "version": "0.2.0",
+  "description": "Practice stored exam questions, review Chinese memory cards, and read your authorized AskSia course records.",
   "author": {
     "name": "AskSia",
     "email": "contact@asksia.ai",

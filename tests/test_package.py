@@ -23,7 +23,7 @@ class PackageTests(unittest.TestCase):
         self.root = Path(self.temporary.name) / "plugin"
         self.root.mkdir()
         shutil.copytree(SOURCE_ROOT / "scripts", self.root / "scripts")
-        identity = {"name": "asksia", "version": "0.1.0", "description": "Test plugin",
+        identity = {"name": "asksia", "version": "0.2.0", "description": "Test plugin",
                     "repository": package.REPOSITORY}
         self.write_json("plugin.json", {
             **identity, "$schema": package.PLUGIN_SCHEMA,
