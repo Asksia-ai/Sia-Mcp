@@ -2,26 +2,26 @@
 
 本仓库向 Claude 和 ChatGPT 提供 AskSia 插件：三个学习 skills、MCP 接入配置、图标及安装包。0.2.1 对接欢迎包、中文词卡界面和课程只读工具；实际业务与卡片界面资源均由 AskSia 后端提供，不打包进 ZIP。
 
-**0.2.1 当前用于 preview 安装和业务验收，生产发布另行安排。** 本地包构建成功不代表新工具已经部署或真实客户端验收通过。此处的 ChatGPT 卡片不等于自家网页／Agent 聊天接入，后者不随本插件恢复。
+**0.2.1 对应的后端和网页授权页已于 2026-11-25 部署生产，正式包用于生产安装验收，完整业务回归仍待接收方确认。** 本地包构建成功不代表真实客户端验收通过。此处的 ChatGPT 卡片不等于自家网页／Agent 聊天接入，后者不随本插件恢复。
 
-原文 D 的交付形式是 **Claude 仓库插件市场入口 + ChatGPT portable ZIP + 两端共用的三个 skills**。本次新增的 Claude preview ZIP 用于省去测试同事手改服务地址；ChatGPT 的 `-install.zip` 是适配桌面本地市场的辅助外壳，二者不改变原文交付范围，也不代表所有用户只有这一种安装方式。
+交付形式是 **Claude 仓库插件市场入口 + ChatGPT portable ZIP + 两端共用的三个 skills**。Claude ZIP 已预置对应环境地址；ChatGPT 的 `-install.zip` 是适配桌面本地市场的辅助外壳。完整插件安装与手动添加 MCP 服务是不同入口，后者不安装 skills。
 
 ## 1. 先选对环境和安装包
 
 | 用途 | MCP 服务 | 使用方式 |
 | --- | --- | --- |
-| 本次测试 | `https://api1.asksia.ai/mcp` | 使用名称含 `preview` 的安装包 |
-| 正式发布 | `https://api.asksia.ai/mcp` | 待生产服务、授权页和数据准备完成并放行后使用 |
+| 生产安装与验收 | `https://api.asksia.ai/mcp` | 使用名称含 `production` 的安装包；验收用专用生产测试账号 |
+| preview 回归 | `https://api1.asksia.ai/mcp` | 使用名称含 `preview` 的安装包和 preview 测试账号 |
 
-本次 preview 浏览器登录授权页位于 `https://needsitereview.asksia.ai/mcp/authorize`，应由客户端发起授权后自动跳转，不手工拼接授权参数。
+生产浏览器授权页位于 `https://app.asksia.ai/mcp/authorize`，preview 为 `https://needsitereview.asksia.ai/mcp/authorize`。应由客户端发起授权后自动跳转，不手工拼接授权参数。两个环境的账号授权和学习数据分别验证，安装正式包不会迁移测试数据。
 
 | 交付文件 | 给谁使用 | 内容 |
 | --- | --- | --- |
-| `asksia-claude-preview.zip` | Claude Code 使用者 | 已配置 api1 的 Claude 插件市场、插件、三个 skills 和 `INSTALL.txt` |
-| `asksia-chatgpt-preview-install.zip` | ChatGPT 桌面端安装验收 | 本地插件市场、完整插件、三个 skills 和 `INSTALL.txt` |
-| `asksia-chatgpt-preview.zip` | 已有兼容导入流程的接收方 | 原始 portable 插件文件；不含本地市场外壳 |
+| `asksia-claude-production.zip` | Claude Code 使用者 | 已配置正式地址的 Claude 插件市场、插件、三个 skills 和 `INSTALL.txt` |
+| `asksia-chatgpt-production-install.zip` | ChatGPT 桌面端安装验收 | 已配置正式地址的本地插件市场、完整插件、三个 skills 和 `INSTALL.txt` |
+| `asksia-chatgpt-production.zip` | 兼容导入流程／目录提交 | 原始 portable 插件文件；不含本地市场外壳，打包不等于提交审核 |
 
-从交付附件领取 ZIP，或按第 7 节从源码构建。`dist/` 是本地产物目录，ZIP 不随 Git 源码提交。**源码中的两份 MCP 配置保留正式地址；仅克隆 `preview` 分支并不会自动把服务切到 api1。** 打包脚本会为测试包预置正确地址，测试同事无需编辑 JSON。
+从交付附件领取 ZIP，或按第 7 节从源码构建。`dist/` 是本地产物目录，ZIP 不随 Git 源码提交。**源码分支名 `preview` 不代表服务环境；源码中的两份 MCP 配置指向正式地址。** 打包时通过 `--env` 指定环境，无需手改 JSON。上述文件名中的 `production` 换成 `preview` 即对应测试包。
 
 准备一个团队安排的 AskSia 测试账号。查备考计划、词汇进度及三个课程工具允许 credits 余额为 0；欢迎包、取题、判分、取词卡（含文字翻面）和记录复习仍要求余额大于 0。这些工具读取已有内容，不调用模型生成替代内容，也不扣模型 credits。课程工具另需 `courses.read` 授权，旧授权不会自动扩大。可用考试与内容以实际后端返回为准。
 
@@ -29,16 +29,25 @@
 
 需要支持插件和 OAuth 的 Claude Code。安装包使用 `.claude-plugin/`、`.mcp.json` 及共享的 `skills/`，与 ChatGPT 的安装入口不同。
 
-1. 把 `asksia-claude-preview.zip` 解压到运行 Claude Code 的电脑，得到 `asksia-claude-preview` 目录；安装期间保留这个目录。
+1. 把 `asksia-claude-production.zip` 解压到运行 Claude Code 的电脑，得到 `asksia-claude-production` 目录；安装期间保留这个目录。
 2. 在 **Claude Code 交互会话**中执行下面的命令，将示例路径替换成实际解压目录：
 
    ```text
-   /plugin marketplace add "/absolute/path/asksia-claude-preview"
-   /plugin install asksia@asksia-preview
+   /plugin marketplace add "/absolute/path/asksia-claude-production"
+   /plugin install asksia@asksia-production
    ```
 
 3. 按客户端提示重新加载插件或新开会话。运行 `/mcp`，找到插件提供的 AskSia 服务；若提示认证，选择 Authenticate 并在浏览器登录、同意授权。
-4. 确认服务使用 `https://api1.asksia.ai/mcp`，再按第 5 节开始测试。
+4. 确认服务使用 `https://api.asksia.ai/mcp`，再按第 5 节开始测试。
+
+也可使用仓库市场入口，两种方式选一种，避免重复安装：
+
+```text
+/plugin marketplace add Asksia-ai/Sia-Mcp
+/plugin install asksia@asksia
+```
+
+仓库市场标识为 `asksia`，本地正式 ZIP 的来源标识为 `asksia-production`，两者都连接正式服务。preview ZIP 则使用 `asksia-claude-preview` 目录和 `asksia@asksia-preview` 标识，连接 api1。
 
 看到三个 skills 只说明插件已加载；看到工具实际调用成功，才说明服务连接可用。若之前手动添加过同一个测试 MCP，完整插件验收时先停用重复连接，避免模型调用到另一套入口。
 
@@ -48,26 +57,30 @@
 
 该路径需要兼容的 ChatGPT 桌面客户端，以及支持 `codex plugin marketplace add` 的 Codex CLI。命令只用于注册插件来源，之后仍在 ChatGPT 桌面端安装和使用。
 
-1. 将 `asksia-chatgpt-preview-install.zip` 解压到运行 ChatGPT 的 **Mac 本机**，得到 `asksia-chatgpt-preview-install` 目录；不要把本次 Mac 安装命令运行在 SSH 开发服务器上。
+1. 将 `asksia-chatgpt-production-install.zip` 解压到运行 ChatGPT 的 **Mac 本机**，得到 `asksia-chatgpt-production-install` 目录；不要把本次 Mac 安装命令运行在 SSH 开发服务器上。
 2. 在 Mac 终端进入该目录，执行：
 
    ```bash
    codex plugin marketplace add .
    ```
 
-3. 重启 ChatGPT 桌面端，在 Plugins 中选择 **AskSia Preview** 来源，安装 **AskSia**（标识为 `asksia@asksia-preview`）。
+3. 重启 ChatGPT 桌面端，在 Plugins 中选择 **AskSia** 来源，安装 **AskSia**（标识为 `asksia@asksia-production`）。
 4. 如果客户端提示连接或认证，在浏览器完成 AskSia 登录授权。保持客户端开启，成功后返回客户端新建对话并启用插件。
-5. 完整插件验收时，先停用之前手动添加的重复 AskSia MCP 连接，然后按第 5 节测试。
+5. 确认服务地址为 `https://api.asksia.ai/mcp`。完整插件验收时，先停用重复的 AskSia MCP 连接，然后按第 5 节测试。
+
+使用 preview 包时，解压目录改为 `asksia-chatgpt-preview-install`，来源显示为 **AskSia Preview**，标识为 `asksia@asksia-preview`，地址为 api1。
 
 注册期间保留解压目录。若 `codex` 命令不存在，或没有 `plugin marketplace add` 子命令，先由安装负责人按客户端官方说明准备对应 CLI；不要把安装包里的配置手动粘到其他应用配置文件中。
 
-### 更新已经安装的测试包
+### 更新已安装的包或切换环境
 
-先在客户端卸载 **`asksia-preview` 来源内的 AskSia 插件**，再用新包替换原解压目录的文件并重新安装。路径不变时可沿用已注册来源；路径改变时，先移除旧的 `asksia-preview` 来源，再按上面的步骤添加新目录。只处理本次测试来源，不改其他已安装插件或正式来源。重新安装后核对版本和服务地址；单纯替换 ZIP 或重启客户端不等于已更新安装缓存。
+同一环境更新时，先卸载对应来源内的 AskSia 插件，再用新包替换原解压目录并重新安装。路径不变时可沿用已注册来源；路径改变时先移除旧来源，再添加新目录。只处理对应的 AskSia 来源。重新安装后核对版本和服务地址；单纯替换 ZIP 或重启客户端不等于已更新安装缓存。
+
+从 preview 切到生产时，单独安装 production 包并完成正式账号授权；不要把 preview 包改名后继续使用。正式验收时停用旧测试连接，避免模型选错环境。
 
 ## 4. 网页端及只测 MCP 服务
 
-原需求还列了 claude.ai 自定义连接器、ChatGPT 网页的自定义 MCP／开发者入口。这些入口需使用有相应权限的账号，按客户端当前界面添加 `https://api1.asksia.ai/mcp`，选择 OAuth／自动发现并完成授权。
+claude.ai 自定义连接器、ChatGPT 网页的自定义 MCP／开发者入口需使用有相应权限的账号。按客户端当前界面添加 `https://api.asksia.ai/mcp`，选择 OAuth／自动发现并完成授权；测试环境则填写 `https://api1.asksia.ai/mcp`。
 
 手动添加 MCP 可验收后端提供的十个工具，**不会自动安装本仓库的三个 skills**。ChatGPT 卡片由服务端 MCP 资源提供，是否显示取决于客户端支持和后端部署，不依赖把 UI 文件放进 ZIP。网页工具验收和完整插件安装验收分别记录；官方目录发布另行安排。
 
@@ -77,7 +90,7 @@
 
 ### 十个工具的最小验收
 
-在 preview 上进行；提交答案和记录复习会写入该测试账号的学习记录。每一步查看客户端展开的真实工具调用、参数与返回值，不能只看模型说“已完成”。
+生产安装验收使用专用生产测试账号和 production 包／正式服务地址；preview 回归使用 preview 包／测试地址。提交答案和记录复习会写入所选环境测试账号的学习记录。每一步查看客户端展开的真实工具调用、参数与返回值，不能只看模型说“已完成”。
 
 下面用 `sat`、`toefl` 举例；按测试账号实际开放的考试调整。空计划不代表不能练题，空题库／空词卡也不能由模型编造补齐。
 
@@ -114,7 +127,7 @@ ChatGPT 网页／手机卡片验收应检查：3–5 张组内切换、先回忆
 
 图片为空时继续展示文字卡；整词一段、同义词为空均是允许内容。整卡图为空时不提供该图的保存／分享入口。
 
-再做三个边界检查：
+再做以下边界检查：
 
 - 首次连接时取消授权，本次未批准的请求不能被报告为连接成功；取消新请求不等于撤销已有连接。请求过期后可从客户端重新发起。
 - 网络异常需要重试提交时，使用同一 handle 和原答案／反馈；同一 handle 不应重复判分或重复推进复习。
@@ -132,8 +145,8 @@ ChatGPT 网页／手机卡片验收应检查：3–5 张组内切换、先回忆
 
 | 现象 | 处理方式 |
 | --- | --- |
-| 插件来源或 AskSia 不显示 | Claude 使用 `asksia-claude-preview.zip`，ChatGPT 桌面使用 `asksia-chatgpt-preview-install.zip`；核对解压目录是否保留、CLI 是否支持相应命令，重新加载客户端后查看来源 |
-| 已看到 skills，但没有可用工具 | 检查 AskSia 服务是否完成授权、是否连接 api1；实际调用 `get_my_exams` 确认 |
+| 插件来源或 AskSia 不显示 | 正式安装使用 `asksia-claude-production.zip` 或 `asksia-chatgpt-production-install.zip`；核对解压目录是否保留、CLI 是否支持相应命令，重新加载客户端后查看来源 |
+| 已看到 skills，但没有可用工具 | 检查授权及环境地址：生产为 api，preview 为 api1；实际调用 `get_my_exams` 确认 |
 | 授权页报 `invalid_client`／`invalid_request` | 从客户端重新生成链接，并提供去除敏感参数的错误截图给开发；不要手动修改 client_id 或回跳地址 |
 | 回到 `127.0.0.1`／`localhost` 时连接被拒绝 | 这是桌面／CLI 的本机回调地址；保持客户端开启，关闭旧标签页，从客户端重新发起授权 |
 | 返回空计划、空题目或空词卡 | 区分账号无计划、考试未开放、素材未齐或可用题已耗尽；保留返回结果给内容／开发负责人核对 |
@@ -150,10 +163,10 @@ git clone --branch preview https://github.com/Asksia-ai/Sia-Mcp.git
 cd Sia-Mcp
 python3 scripts/validate-package.py
 python3 -m unittest discover -s tests -p 'test_*.py'
-bash scripts/build-chatgpt-zip.sh
+bash scripts/build-chatgpt-zip.sh --env production
 ```
 
-沿用原需求中的脚本入口名称；现在默认生成第 1 节的三个 preview ZIP。脚本只打包明确列出的文件，不包含 `.env`、Git 历史、上传凭据或本地客户端配置，也不修改源码中的正式服务地址。
+上述命令生成第 1 节的三个 production ZIP。脚本只打包明确列出的文件，不包含 `.env`、Git 历史、上传凭据或本地客户端配置，也不修改源码中的正式服务地址。
 
 Claude 清单还需用支持当前插件字段的 CLI 校验：
 
@@ -164,26 +177,21 @@ claude plugin validate .claude-plugin/marketplace.json
 
 较旧 CLI 若不识别当前清单字段，先核对其支持范围，不通过删掉必需字段或改写用户全局配置来绕过。
 
-生产安装验收时构建正式包，先内部验收，通过后再分发同一份产物：
+需要测试包时显式指定 preview；脚本省略参数时也默认 preview：
 
 ```bash
-bash scripts/build-chatgpt-zip.sh --env production
+bash scripts/build-chatgpt-zip.sh --env preview
 ```
 
-生成的本地市场正式包使用 `asksia-production` 来源，与 `asksia-preview` 分开。正式服务发布后，Claude 还可直接从仓库市场安装：
-
-```text
-/plugin marketplace add Asksia-ai/Sia-Mcp
-/plugin install asksia@asksia
-```
-
-这条仓库安装入口使用源码中的生产地址；本轮 preview 测试使用前面的测试包。
+本地市场正式包使用 `asksia-production` 来源，与 `asksia-preview` 分开。正式包先内部安装验收，通过后再分发同一份产物。构建不上传文件，也不提交官方目录审核。
 
 ## 8. 已验证与待验收
 
-0.2.0 已推送 preview。2026-11-23 已只读确认 preview 授权页包含新的课程权限文案，后端 OAuth 元数据已公布 `courses.read`。这仅确认新入口已生效；真实 ChatGPT／手机／Claude 的十工具、卡片与课程内容仍由 Ada 等接收方验收。
+2026-11-25 已只读确认生产授权页实际加载的代码包含课程权限文案，正式后端 OAuth 元数据公布 `courses.read`，未授权调用正常返回 401；credits 说明页已返回 200。以上是部署入口核验，生产完整业务回归及 0.2.1 正式包安装验收仍待接收方确认。
 
-本次开发自检：294 项隔离后端回归通过；前端／组件检查共 57 项通过（授权 21、课程入口 17、异步加载竞争 5、模拟宿主词卡 14）；最终前端生产构建及 9 项包测试通过。隔离测试和模拟宿主不代替真实客户端验收。
+开发自检：截至本次后端修复，345 项隔离回归通过；功能阶段的前端／组件检查共 57 项通过（授权 21、课程入口 17、异步加载竞争 5、模拟宿主词卡 14），前端生产构建及 9 项包测试通过。preview 的 ChatGPT 网页复测已确认词卡显示和填空题面；生产验收独立记录，隔离测试和模拟宿主不代替真实客户端验收。
+
+已接受的本轮限制：免费版长对话仍可能达到上下文上限；尚不支持精确指定练习题型；手机或平板打开课程出处时，AskSia 网页可能仍显示全屏下载提示，ChatGPT 内的词卡不受该提示影响。
 
 开始验收前刷新 MCP 工具信息并新开对话。课程工具需要新增 `courses.read` 授权，旧令牌不会自动增权。卡片界面由 MCP 服务提供，支持组件的客户端通过手动 MCP 连接也可验收，不依赖 ZIP 中的 skills；不支持组件时使用文字揭示流程。
 
@@ -203,7 +211,7 @@ bash scripts/build-chatgpt-zip.sh --env production
 
 Google、Microsoft、Apple 三种现有第三方登录的真实账号流程也需由同事完成验收；不要将入口参数或模拟回跳检查当成真实第三方登录已通过。
 
-生产发布、生产内容回读和官方市场上架不因本次 ZIP 交付自动完成。首发考试／词卡范围由内容交付和实际可用数据确认。
+生产内容回读、完整插件安装验收和官方目录上架不因 ZIP 交付自动完成。首发考试／词卡范围由内容交付和实际可用数据确认。
 
 ## 9. 数据与隐私
 
