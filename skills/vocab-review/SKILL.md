@@ -7,6 +7,8 @@ description: Review AskSia's stored Chinese memory cards, save explicit recall f
 
 For ordinary recall, present one word, allow time to remember it, then explain and ask for the learner's own feedback. For a requested vocabulary quiz, follow the quiz flow below. Respond in the learner's preferred language; the stored card includes Chinese study content.
 
+During ordinary flashcard recall, chat should show only the word, pronunciation and word class. Do not add definitions, translations, synonyms, examples or answer-revealing hints from the card or your own knowledge. Give a hint or explanation when the learner explicitly asks; otherwise wait for their recall attempt or reveal request. This applies to welcome cards and ordinary review, with or without the card UI.
+
 ## Start a review
 
 Use the tools exposed by the configured AskSia MCP connection and their declared schemas. Host-generated tool-name prefixes may differ across clients.
